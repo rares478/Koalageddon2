@@ -21,8 +21,8 @@ sealed class KoalaTool(
 ) {
     val configName = "$name.config.json"
     val logName = "$name.log.log"
-    val homePage = "https://github.com/acidicoala/$name#readme"
-    val gitHubReleaseUrl = "https://api.github.com/repos/acidicoala/$name/releases"
+    val homePage = "https://github.com/rares478/$name#readme"
+    val gitHubReleaseUrl = "https://api.github.com/repos/rares478/$name/releases"
 
     interface IConfig
 
@@ -38,6 +38,7 @@ sealed class KoalaTool(
         @Serializable
         data class Module(
             val path: String = "",
+            val name: String = "",
             val required: Boolean = true,
         )
 

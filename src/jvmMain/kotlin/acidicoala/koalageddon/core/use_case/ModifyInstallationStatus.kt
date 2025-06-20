@@ -6,11 +6,14 @@ import acidicoala.koalageddon.core.model.KoalaTool.Koaloader
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.encodeToStream
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import kotlin.io.path.*
+import java.util.concurrent.ThreadLocalRandom
+import kotlin.random.Random
 
 class ModifyInstallationStatus(override val di: DI) : DIAware {
     private val paths: AppPaths by instance()
@@ -45,12 +48,20 @@ class ModifyInstallationStatus(override val di: DI) : DIAware {
             destination = paths.getKoaloaderDll(store),
         )
 
+        val unlockerDir = paths.getUnlockerDll(unlocker).parent
+        val unlockerName = (1..8)
+            .map { ThreadLocalRandom.current().nextInt(0, 36) }
+            .map { if (it < 10) it + 48 else it + 87 }
+            .map { it.toChar() }
+            .joinToString("")
+
         val koaloaderConfig = Koaloader.Config(
             autoLoad = false,
             targets = listOf(store.executable),
             modules = listOf(
                 Koaloader.Module(
-                    path = paths.getUnlockerDll(unlocker).absolutePathString()
+                    path = (unlockerDir / "$unlockerName.dll").absolutePathString(),
+                    name = unlockerName
                 )
             )
         )
@@ -60,7 +71,7 @@ class ModifyInstallationStatus(override val di: DI) : DIAware {
         unzipToolDll(
             tool = unlocker,
             entry = "${unlocker.originalName}${store.isa.bitnessSuffix}.dll",
-            destination = paths.getUnlockerDll(unlocker),
+            destination = unlockerDir / "$unlockerName.dll",
         )
 
         // Ensure that config file exists
@@ -74,7 +85,15 @@ class ModifyInstallationStatus(override val di: DI) : DIAware {
     private fun uninstall(store: Store) = channelFlow<ILangString> {
         closeIfRunning(store)
 
-        paths.getKoaloaderConfig(store).deleteIfExists()
+        val koaloaderConfigPath = paths.getKoaloaderConfig(store)
+
+        if (koaloaderConfigPath.exists()) {
+            val koaloaderConfig = appJson.decodeFromString<Koaloader.Config>(koaloaderConfigPath.readText())
+            koaloaderConfig.modules.forEach { module ->
+                Path(module.path).resolve("${module.name}.dll").deleteIfExists()
+            }
+            koaloaderConfigPath.deleteIfExists()
+        }
 
         paths.getKoaloaderDll(store).deleteIfExists()
     }

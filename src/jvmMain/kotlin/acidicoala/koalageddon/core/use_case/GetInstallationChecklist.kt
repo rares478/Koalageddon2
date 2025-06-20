@@ -109,7 +109,13 @@ class GetInstallationChecklist(override val di: DI) : DIAware {
             return false
         }
 
-        if (config.modules.none { Path(it.path) == paths.getUnlockerDll(store.unlocker) }) {
+        // Check if the configured module DLL actually exists
+        val moduleExists = config.modules.any { module ->
+            val dllPath = Path(module.path)
+            dllPath.exists()
+        }
+        
+        if (!moduleExists) {
             logger.warn("Koaloader config module is misconfigured")
             return false
         }
