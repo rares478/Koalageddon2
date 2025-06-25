@@ -3,8 +3,10 @@ package acidicoala.koalageddon.core.di
 import acidicoala.koalageddon.core.event.CoreEvent
 import acidicoala.koalageddon.core.logging.AppLogger
 import acidicoala.koalageddon.core.model.AppPaths
+import acidicoala.koalageddon.core.model.HookedGamesCache
 import acidicoala.koalageddon.core.use_case.*
 import acidicoala.koalageddon.core.use_case.ReadSettings
+import acidicoala.koalageddon.core.use_case.UninstallSteamGameUnlocker
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.kodein.di.DI
@@ -17,6 +19,7 @@ val coreModule = DI.Module(name = "Core") {
     bindEagerSingleton { AppLogger(di) }
     bindSingleton { MutableSharedFlow<CoreEvent>() }
     bindSingleton { MutableStateFlow(ReadSettings(di)()) }
+    bindSingleton { HookedGamesCache(di) }
 
     // Use cases
     bindProvider { ShowSnackbar(di) }
@@ -31,4 +34,9 @@ val coreModule = DI.Module(name = "Core") {
     bindProvider { ForceCloseProcess(di) }
     bindProvider { GetHumanReadableSize(di) }
     bindProvider { GetFormattedTimestamp(di) }
+    bindProvider { DetectSteamGames(di) }
+    bindProvider { DetectGameArchitecture() }
+    bindProvider { InstallSteamGameUnlocker(di) }
+    bindProvider { SmokeApiDetector(di) }
+    bindProvider { UninstallSteamGameUnlocker(di) }
 }

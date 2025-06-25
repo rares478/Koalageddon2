@@ -7,11 +7,11 @@ plugins {
     id("com.github.gmazzo.buildconfig") version "3.1.0" // https://github.com/gmazzo/gradle-buildconfig-plugin
 }
 
-val author = "acidicoala"
+val author = "rares478"
 val projectName = "Koalageddon"
-val appVersion = "2.0.1"
+val appVersion = "2.1.0"
 
-group = author
+group = "acidicoala"
 version = appVersion
 
 repositories {
