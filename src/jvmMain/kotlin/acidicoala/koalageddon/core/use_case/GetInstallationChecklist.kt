@@ -127,22 +127,34 @@ class GetInstallationChecklist(override val di: DI) : DIAware {
      * @return Unlocker version encoded in DLL
      */
     private fun checkUnlockerDll(store: Store): String? {
-        val unlockerPath = paths.getUnlockerDll(store.unlocker)
-
-        if (!unlockerPath.exists()) {
-            logger.debug("""Unlocker DLL not found at "$unlockerPath"""")
+        val configFile = paths.getKoaloaderConfig(store)
+        if (!configFile.exists()) {
+            logger.debug("Koaloader config for $store not found in $configFile")
             return null
         }
 
-        logger.debug("""Unlocker DLL found at "$unlockerPath"""")
-
-        val pe = PE(unlockerPath.toString())
-        if (!pe.matches(store.isa)) {
-            logger.debug("Found Unlocker DLL with incompatible architecture")
+        val config = try {
+            Koaloader.parseConfig(configFile)
+        } catch (e: Exception) {
+            logger.error(e, "Koaloader config parsing error")
             return null
         }
 
-        return getFileInfoString(unlockerPath, "ProductVersion")
+        for (module in config.modules) {
+            val dllPath = Path(module.path)
+            if (!dllPath.exists()) {
+                logger.debug("Unlocker DLL not found at \"$dllPath\"")
+                continue
+            }
+            logger.debug("Unlocker DLL found at \"$dllPath\"")
+            val pe = PE(dllPath.toString())
+            if (!pe.matches(store.isa)) {
+                logger.debug("Found Unlocker DLL with incompatible architecture")
+                continue
+            }
+            return getFileInfoString(dllPath, "ProductVersion")
+        }
+        return null
     }
 
     private fun checkUnlockerConfig(store: Store): Boolean {
