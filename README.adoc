@@ -10,14 +10,16 @@ Currently, in development.
 Implemented stores:
 
 * _Steam_ via SmokeAPI (store mode)
+* _Steam_ via SmokeAPI (game mode)
+* _Ubisoft Connect_ via SleepAPI (store mode)
+* _Ubisoft Connect_ via SleepAPI (game mode)
 
 Coming up in future updates:
 
-* _Steam_ via SmokeAPI (game mode)
+
 * _Epic Games Store_ via ScreamAPI (store mode)
 * _Epic Games Store_ via ScreamAPI (game mode)
-* _Ubisoft Connect_ via UplayR*Unlocker (store mode)
-* _Ubisoft Connect_ via UplayR*Unlocker (game mode)
+
 
 image::extra/screenshot.jpg[,768]
 
