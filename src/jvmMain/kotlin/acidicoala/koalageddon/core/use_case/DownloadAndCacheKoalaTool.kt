@@ -55,15 +55,16 @@ class DownloadAndCacheKoalaTool(override val di: DI) : DIAware {
             .find { it.version?.major == tool.majorVersion }
             ?: throw Exception("Failed to find latest supported ${tool.name} release in GitHub")
 
-        val asset = release.assets.first()
+        logger.debug("Available assets for ${tool.name} in release ${release.tagName}: ${release.assets.map { it.name }}")
+
+        val asset = release.assets.firstOrNull { it.name.endsWith(".zip", ignoreCase = true) }
+            ?: throw Exception("No .zip asset found for ${tool.name} in release ${release.tagName}")
+
+        logger.debug("Selected asset for ${tool.name}: ${asset.name}")
 
         val assetPath = paths.getCacheAsset(asset.name)
+        logger.debug("Cache path for ${tool.name}: $assetPath")
 
-        if (Files.exists(assetPath) && asset.size == withContext(Dispatchers.IO) { Files.size(assetPath) }) {
-            val version = release.version?.versionString
-            logger.debug("Latest supported ${tool.name} version $version is already cached")
-            return@channelFlow
-        }
 
         val assetBytes = httpClient.get(asset.browserDownloadUrl) {
             timeout {
@@ -86,7 +87,7 @@ class DownloadAndCacheKoalaTool(override val di: DI) : DIAware {
             }
         }.body<ByteArray>()
 
-        logger.debug("Finished downloading ${asset.name}")
+        logger.debug("Finished downloading ${asset.name}, size: ${assetBytes.size}")
 
         assetPath.writeBytes(assetBytes)
 

@@ -10,6 +10,7 @@ import acidicoala.koalageddon.core.values.Bitmaps
 import acidicoala.koalageddon.home.ui.HomeScreen
 import acidicoala.koalageddon.settings.di.settingsModule
 import acidicoala.koalageddon.steam.di.steamModule
+import acidicoala.koalageddon.uplay.di.uplayModule
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -45,7 +46,7 @@ fun main() = application {
 
         withDI({
             bindInstance { appScope }
-            importAll(coreModule, settingsModule, steamModule)
+            importAll(coreModule, settingsModule, steamModule, uplayModule)
         }) {
             val settingsFlow: MutableStateFlow<Settings> by localDI().instance()
             val settings by settingsFlow.collectAsState()

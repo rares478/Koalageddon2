@@ -8,6 +8,7 @@ import acidicoala.koalageddon.home.model.HomeTab
 import acidicoala.koalageddon.settings.ui.SettingsScreen
 import acidicoala.koalageddon.start.ui.StartScreen
 import acidicoala.koalageddon.steam.ui.SteamScreen
+import acidicoala.koalageddon.uplay.ui.UplayScreen
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -110,7 +111,7 @@ fun HomeScreen() {
                             HomeTab.Steam -> SteamScreen()
                             HomeTab.Settings -> SettingsScreen()
                             HomeTab.Epic -> DevelopmentPlaceholder()
-                            HomeTab.Ubisoft -> DevelopmentPlaceholder()
+                            HomeTab.Ubisoft -> UplayScreen()
                         }
                     }
                 }

@@ -10,6 +10,7 @@ sealed class Store(
     val executable: String,
     val isa: ISA,
     val unlocker: KoalaTool,
+    val additionalUnlockers: List<KoalaTool> = emptyList(),
 ) {
     val directory = Path(
         try {
@@ -37,9 +38,9 @@ sealed class Store(
 
     object Ubisoft : Store(
         registryEntry = """SOFTWARE\Ubisoft\Launcher""" to "InstallDir",
-        executable = "Steam.exe",
+        executable = "upc.exe",
         isa = ISA.X86,
-        unlocker = KoalaTool.SmokeAPI,
+        unlocker = KoalaTool.SleepAPI,
     )
 
     companion object {

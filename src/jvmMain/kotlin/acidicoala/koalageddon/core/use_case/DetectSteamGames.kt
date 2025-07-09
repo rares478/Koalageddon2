@@ -18,18 +18,11 @@ data class SteamGame(
     val installationStatus: GameInstallationStatus
 )
 
-sealed class GameInstallationStatus {
-    object NotInstalled : GameInstallationStatus()
-    object HookMode : GameInstallationStatus()
-    object ProxyMode : GameInstallationStatus()
-}
-
 class DetectSteamGames(override val di: DI) : DIAware {
     private val logger: AppLogger by instance()
-    private val smokeApiDetector: SmokeApiDetector by instance()
     private val detectGameArchitecture: DetectGameArchitecture by instance()
+    private val detectInstallationStatus: DetectInstallationStatus by instance()
     
-    // List of known utility exe names to ignore for now
     private val ignoreExeNames = setOf(
         "language-changer.exe", "dlc-uninstaller.exe", "unins000.exe", "support.exe", "launcher.exe", "config.exe", "settings.exe", "setup.exe", "install.exe", "uninstaller.exe", "unitycrashhandler64.exe", "ueprereqsetup_x64.exe", "crashreportclient.exe", "vconsole2.exe"
     )
@@ -58,7 +51,6 @@ class DetectSteamGames(override val di: DI) : DIAware {
             }
         }
         
-        // Remove duplicates
         return games.distinctBy { game ->
             runCatching { File(game.executablePath).canonicalPath.lowercase() }.getOrElse { game.executablePath.lowercase() }
         }
@@ -71,7 +63,6 @@ class DetectSteamGames(override val di: DI) : DIAware {
             val content = libraryFoldersFile.toFile().readText()
             val paths = mutableListOf<Path>()
             
-            // Simple parsing of libraryfolders.vdf to find additional paths
             val pathRegex = "\"path\"\\s+\"([^\"]+)\"".toRegex()
             pathRegex.findAll(content).forEach { matchResult ->
                 val path = matchResult.groupValues[1]
@@ -98,7 +89,6 @@ class DetectSteamGames(override val di: DI) : DIAware {
                     .filterNot { ignoreExeNames.contains(it.name.lowercase()) }
                     .toList()
                 
-                // Prefer exe whose name matches the directory name
                 val dirNameNorm = gameDir.name.lowercase().replace(" ", "").replace("_", "")
                 val bestExe = allExeFiles.find {
                     val exeNameNorm = it.nameWithoutExtension.lowercase().replace(" ", "").replace("_", "")
@@ -110,7 +100,7 @@ class DetectSteamGames(override val di: DI) : DIAware {
                     if (seenExecutables.add(canonicalPath)) {
                         try {
                             val architecture = detectGameArchitecture(bestExe)
-                            val installationStatus = detectInstallationStatus(bestExe.parentFile, bestExe.name)
+                            val installationStatus = detectInstallationStatus(bestExe.parentFile)
                             
                             games.add(SteamGame(
                                 executablePath = bestExe.absolutePath,
@@ -129,27 +119,4 @@ class DetectSteamGames(override val di: DI) : DIAware {
         return games
     }
     
-    private fun detectInstallationStatus(gameDirectory: File, exeName: String): GameInstallationStatus {
-        // Check for Hook Mode
-        val versionDll = File(gameDirectory, "version.dll")
-        val smokeApiDll = File(gameDirectory, "SmokeAPI.dll")
-        val smokeApiConfig = File(gameDirectory, "SmokeAPI.config.json")
-        
-        if (versionDll.exists() && smokeApiDll.exists() && smokeApiConfig.exists() && smokeApiDetector.isSmokeApiDll(smokeApiDll)) {
-            return GameInstallationStatus.HookMode
-        }
-        
-        // Check for Proxy Mode
-        val steamApiDll = File(gameDirectory, "steam_api.dll")
-        val steamApi64Dll = File(gameDirectory, "steam_api64.dll")
-        val steamApiOriginal = File(gameDirectory, "steam_api_o.dll")
-        val steamApi64Original = File(gameDirectory, "steam_api64_o.dll")
-        
-        if ((steamApiDll.exists() && steamApiOriginal.exists() && smokeApiDetector.isSmokeApiDll(steamApiDll)) || 
-            (steamApi64Dll.exists() && steamApi64Original.exists() && smokeApiDetector.isSmokeApiDll(steamApi64Dll))) {
-            return GameInstallationStatus.ProxyMode
-        }
-        
-        return GameInstallationStatus.NotInstalled
-    }
 } 

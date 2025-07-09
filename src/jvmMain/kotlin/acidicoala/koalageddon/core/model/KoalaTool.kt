@@ -113,4 +113,55 @@ sealed class KoalaTool(
 
         override fun writeDefaultConfig(path: Path) = appJson.encodeToStream(Config(), path.outputStream())
     }
+
+    object SleepAPI : KoalaTool(name = "SleepAPI", originalName = "uplay_r1", majorVersion = 1) {
+        @Serializable
+        data class Dlc(val ProductID: Int, val name: String)
+        @Serializable
+        data class Item(val ProductID: Int, val name: String)
+        @Serializable
+        data class Config(
+            val version: Int = 1,
+            val general: General = General(),
+            val r1: R1 = R1(),
+            val r2: R2 = R2()
+        ) : IConfig {
+            @Serializable
+            data class General(val logging: Boolean = true)
+            @Serializable
+            data class R1(val lang: String = "default", val hook_loader: Boolean = false, val blacklist: List<String> = emptyList())
+            @Serializable
+            data class R2(
+                val lang: String = "default",
+                val hook_loader: Boolean = false,
+                val auto_fetch: Boolean = true,
+                val dlcs: List<Dlc> = emptyList(),
+                val items: List<Item> = emptyList(),
+                val blacklist: List<String> = emptyList()
+            )
+        }
+
+        override val defaultConfig = Config()
+
+        override fun parseConfig(path: Path) = appJson.decodeFromStream<Config>(path.inputStream())
+
+        override fun writeConfig(path: Path, config: IConfig) =
+            appJson.encodeToStream(config as Config, path.outputStream())
+
+        override fun writeDefaultConfig(path: Path) = appJson.encodeToStream(Config(), path.outputStream())
+    }
+
+    object Koalinjector : KoalaTool(name = "Koalinjector", originalName = "Koalinjector", majorVersion = 1) {
+        @Serializable
+        data class Config(val dummy: Boolean = true) : IConfig
+
+        override val defaultConfig = Config()
+
+        override fun parseConfig(path: Path) = appJson.decodeFromStream<Config>(path.inputStream())
+
+        override fun writeConfig(path: Path, config: IConfig) =
+            appJson.encodeToStream(config as Config, path.outputStream())
+
+        override fun writeDefaultConfig(path: Path) = appJson.encodeToStream(Config(), path.outputStream())
+    }
 }

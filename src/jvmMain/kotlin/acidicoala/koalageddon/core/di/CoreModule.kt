@@ -36,6 +36,7 @@ val coreModule = DI.Module(name = "Core") {
     bindProvider { GetFormattedTimestamp(di) }
     bindProvider { DetectSteamGames(di) }
     bindProvider { DetectGameArchitecture() }
+    bindProvider { DetectInstallationStatus() }
     bindProvider { InstallSteamGameUnlocker(di) }
     bindProvider { SmokeApiDetector(di) }
     bindProvider { UninstallSteamGameUnlocker(di) }

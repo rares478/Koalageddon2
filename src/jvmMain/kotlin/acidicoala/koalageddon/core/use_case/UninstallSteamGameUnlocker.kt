@@ -30,8 +30,7 @@ class UninstallSteamGameUnlocker(override val di: DI) : DIAware {
             val gameDirectory = gameFile.parentFile
             val isa = detectGameArchitecture(gameFile)
             
-            // Check installation status and uninstall accordingly
-            when (detectInstallationStatus(gameDirectory, gameFile.name)) {
+            when (detectInstallationStatus(gameDirectory)) {
                 is GameInstallationStatus.HookMode -> uninstallHookMode(gameDirectory)
                 is GameInstallationStatus.ProxyMode -> uninstallProxyMode(gameDirectory, isa)
                 is GameInstallationStatus.NotInstalled -> UninstallResult.Success
@@ -43,8 +42,7 @@ class UninstallSteamGameUnlocker(override val di: DI) : DIAware {
         }
     }
     
-    private fun detectInstallationStatus(gameDirectory: File, exeName: String): GameInstallationStatus {
-        // Check for Hook Mode
+    private fun detectInstallationStatus(gameDirectory: File): GameInstallationStatus {
         val versionDll = File(gameDirectory, "version.dll")
         val smokeApiDll = File(gameDirectory, "SmokeAPI.dll")
         val smokeApiConfig = File(gameDirectory, "SmokeAPI.config.json")
@@ -53,7 +51,6 @@ class UninstallSteamGameUnlocker(override val di: DI) : DIAware {
             return GameInstallationStatus.HookMode
         }
         
-        // Check for Proxy Mode
         val steamApiDll = File(gameDirectory, "steam_api.dll")
         val steamApi64Dll = File(gameDirectory, "steam_api64.dll")
         val steamApiOriginal = File(gameDirectory, "steam_api_o.dll")
@@ -69,21 +66,18 @@ class UninstallSteamGameUnlocker(override val di: DI) : DIAware {
     
     private fun uninstallHookMode(gameDirectory: File): UninstallResult {
         try {
-            // Remove version.dll
             val versionDll = File(gameDirectory, "version.dll")
             if (versionDll.exists()) {
                 Files.delete(versionDll.toPath())
                 logger.debug("Removed version.dll from ${gameDirectory.absolutePath}")
             }
             
-            // Remove SmokeAPI.dll
             val smokeApiDll = File(gameDirectory, "SmokeAPI.dll")
             if (smokeApiDll.exists()) {
                 Files.delete(smokeApiDll.toPath())
                 logger.debug("Removed SmokeAPI.dll from ${gameDirectory.absolutePath}")
             }
             
-            // Remove SmokeAPI.config.json
             val smokeApiConfig = File(gameDirectory, "SmokeAPI.config.json")
             if (smokeApiConfig.exists()) {
                 Files.delete(smokeApiConfig.toPath())
@@ -105,7 +99,6 @@ class UninstallSteamGameUnlocker(override val di: DI) : DIAware {
             val steamApiFile = File(gameDirectory, steamApiName)
             val steamApiOriginalFile = File(gameDirectory, steamApiOriginalName)
             
-            // Restore original steam_api.dll
             if (steamApiOriginalFile.exists()) {
                 Files.move(steamApiOriginalFile.toPath(), steamApiFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                 logger.debug("Restored original $steamApiName from ${gameDirectory.absolutePath}")

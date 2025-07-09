@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
+import java.io.File
 import java.io.FileFilter
 import java.nio.file.Path
 import java.util.zip.ZipFile
@@ -20,10 +21,11 @@ class UnzipToolDll(override val di: DI) : DIAware {
 
     /**
      * Unzips the given zip entry from a cache file determined by [KoalaTool] into the given directory
+     * If zipOverride is provided, use it as the zip file.
      */
-    suspend operator fun invoke(tool: KoalaTool, entry: String, destination: Path) {
+    suspend operator fun invoke(tool: KoalaTool, entry: String, destination: Path, zipOverride: File? = null) {
         withContext(Dispatchers.IO) {
-            val zipFile = paths.cacheDir.toFile()
+            val zipFile = zipOverride ?: paths.cacheDir.toFile()
                 .listFiles(FileFilter { it.extension.equals("zip", ignoreCase = true) })
                 ?.filter { it.name.startsWith(tool.name, ignoreCase = true) }
                 ?.mapNotNull { file -> SemanticVersion.fromVersion(file.name)?.let { version -> file to version } }

@@ -37,10 +37,13 @@ class ModifyInstallationStatus(override val di: DI) : DIAware {
 
         val koaloader = Koaloader
 
-        val unlocker = store.unlocker
+        downloadAndCacheKoalaTool(koaloader).collect(::send)
 
-        downloadAndCacheKoalaTool(koaloader).collect(::send) // Forward events upwards
-        downloadAndCacheKoalaTool(unlocker).collect(::send)
+        downloadAndCacheKoalaTool(store.unlocker).collect(::send)
+
+        store.additionalUnlockers.forEach { unlocker ->
+            downloadAndCacheKoalaTool(unlocker).collect(::send)
+        }
 
         unzipToolDll(
             tool = koaloader,
@@ -48,38 +51,73 @@ class ModifyInstallationStatus(override val di: DI) : DIAware {
             destination = paths.getKoaloaderDll(store),
         )
 
-        val unlockerDir = paths.getUnlockerDll(unlocker).parent
-        val unlockerName = (1..8)
-            .map { ThreadLocalRandom.current().nextInt(0, 36) }
-            .map { if (it < 10) it + 48 else it + 87 }
-            .map { it.toChar() }
-            .joinToString("")
-
-        val koaloaderConfig = Koaloader.Config(
-            autoLoad = false,
-            targets = listOf(store.executable),
-            modules = listOf(
+        val modules = mutableListOf<Koaloader.Module>()
+        
+        val mainUnlockerDir = paths.getUnlockerDll(store.unlocker).parent
+        val mainUnlockerName = generateRandomName()
+        modules.add(
+            Koaloader.Module(
+                path = (mainUnlockerDir / "$mainUnlockerName.dll").absolutePathString(),
+                name = mainUnlockerName
+            )
+        )
+        
+        store.additionalUnlockers.forEach { unlocker ->
+            val unlockerDir = paths.getUnlockerDll(unlocker).parent
+            val unlockerName = generateRandomName()
+            modules.add(
                 Koaloader.Module(
                     path = (unlockerDir / "$unlockerName.dll").absolutePathString(),
                     name = unlockerName
                 )
             )
+        }
+
+        val koaloaderConfig = Koaloader.Config(
+            autoLoad = false,
+            targets = listOf(store.executable),
+            modules = modules
         )
 
         appJson.encodeToStream(koaloaderConfig, paths.getKoaloaderConfig(store).outputStream())
 
         unzipToolDll(
-            tool = unlocker,
-            entry = "${unlocker.originalName}${store.isa.bitnessSuffix}.dll",
-            destination = unlockerDir / "$unlockerName.dll",
+            tool = store.unlocker,
+            entry = "${store.unlocker.originalName}${store.isa.bitnessSuffix}.dll",
+            destination = mainUnlockerDir / "$mainUnlockerName.dll",
         )
 
-        // Ensure that config file exists
-        try {
-            unlocker.parseConfig(paths.getUnlockerConfig(unlocker))
-        } catch (e: Exception) {
-            unlocker.writeConfig(path = paths.getUnlockerConfig(unlocker), unlocker.defaultConfig)
+        store.additionalUnlockers.forEachIndexed { index, unlocker ->
+            val unlockerDir = paths.getUnlockerDll(unlocker).parent
+            val unlockerName = modules[index + 1].name // +1 because index 0 is main unlocker
+            unzipToolDll(
+                tool = unlocker,
+                entry = "${unlocker.originalName}${store.isa.bitnessSuffix}.dll",
+                destination = unlockerDir / "$unlockerName.dll",
+            )
         }
+
+        try {
+            store.unlocker.parseConfig(paths.getUnlockerConfig(store.unlocker))
+        } catch (e: Exception) {
+            store.unlocker.writeConfig(path = paths.getUnlockerConfig(store.unlocker), store.unlocker.defaultConfig)
+        }
+        
+        store.additionalUnlockers.forEach { unlocker ->
+            try {
+                unlocker.parseConfig(paths.getUnlockerConfig(unlocker))
+            } catch (e: Exception) {
+                unlocker.writeConfig(path = paths.getUnlockerConfig(unlocker), unlocker.defaultConfig)
+            }
+        }
+    }
+
+    private fun generateRandomName(): String {
+        return (1..8)
+            .map { ThreadLocalRandom.current().nextInt(0, 36) }
+            .map { if (it < 10) it + 48 else it + 87 }
+            .map { it.toChar() }
+            .joinToString("")
     }
 
     private fun uninstall(store: Store) = channelFlow<ILangString> {

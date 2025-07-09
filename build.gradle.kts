@@ -9,7 +9,7 @@ plugins {
 
 val author = "rares478"
 val projectName = "Koalageddon"
-val appVersion = "2.1.0"
+val appVersion = "2.2.0"
 
 group = "acidicoala"
 version = appVersion
